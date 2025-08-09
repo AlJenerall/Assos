@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  firstName  String
+  lastName   String
+  email      String    @unique
+  phone      String?
+  address    String?
+  password   String?   // placeholder, on utilise un token admin pour v1
+  country    String?
+  city       String?
+  district   String?
+  role       Role      @default(MEMBER)
+  antennaId  Int?
+  antenna    Antenna?  @relation(fields: [antennaId], references: [id])
+  activities Activity[]
+  payments   Payment[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Antenna {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  // Rôles locaux (optionnel simple)
+  presidentId       Int?
+  vicePresidentId   Int?
+  secretaryId       Int?
+  secretaryAdjId    Int?
+  spokespersonId    Int?
+  spokespersonAdjId Int?
+  treasurerId       Int?
+  treasurerAdjId    Int?
+  members    User[]
+  cashboxes  Cashbox[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Cashbox {
+  id         Int      @id @default(autoincrement())
+  name       String
+  antennaId  Int?
+  antenna    Antenna? @relation(fields: [antennaId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Payment {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  amount     Float
+  method     PaymentMethod
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+enum PaymentMethod {
+  CASH
+  AUTOMATIC // agrégateur (Orange, etc.)
+}
+
+model QuotaSetting {
+  id        Int      @id @default(autoincrement())
+  period    QuotaPeriod
+  amount    Float
+  year      Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum QuotaPeriod {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+model Contribution { // Cotisation
+  id          Int      @id @default(autoincrement())
+  name        String
+  projectId   Int?
+  project     Project? @relation(fields: [projectId], references: [id])
+  startAt     DateTime
+  endAt       DateTime
+  organizedBy Int      // userId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ContributionPayment {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  contributionId  Int
+  contribution    Contribution @relation(fields: [contributionId], references: [id])
+  amount          Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  slug        String    @unique
+  image       String?
+  startAt     DateTime?
+  endAt       DateTime?
+  status      ProjectStatus @default(ONGOING)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  contributions Contribution[]
+}
+
+enum ProjectStatus {
+  ONGOING
+  FINISHED
+  ARCHIVED
+  CANCELED
+}
+
+model ProjectSuggest {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  status      SuggestStatus @default(PENDING)
+  read        Boolean   @default(false)
+  userId      Int?
+  user        User?     @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum SuggestStatus {
+  ACCEPTED
+  REFUSED
+  PENDING
+}
+
+model Event {
+  id        Int      @id @default(autoincrement())
+  title     String
+  scope     EventScope @default(LOCAL)
+  antennaId Int?
+  approved  Boolean @default(false)
+  startAt   DateTime?
+  endAt     DateTime?
+  createdBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum EventScope {
+  LOCAL
+  GLOBAL
+}
+
+model Document {
+  id        Int      @id @default(autoincrement())
+  title     String
+  url       String
+  archived  Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Vote {
+  id        Int      @id @default(autoincrement())
+  title     String
+  description String?
+  closesAt  DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Activity {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  createdAt DateTime @default(now())
+}
